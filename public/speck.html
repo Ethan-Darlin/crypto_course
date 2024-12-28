@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speck Cipher</title>
+    <style>
+        /* Стили для блока */
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e9f9e9;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .time-result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fffbe6;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Speck Cipher Encryption and Decryption</h1>
+    
+    <!-- Блок для шифрования -->
+    <div class="container">
+        <h2>Шифрование</h2>
+        <label for="plaintext">Введите текст для шифрования:</label>
+        <textarea id="plaintext" rows="4" placeholder="Введите текст..."></textarea>
+
+        <label for="key">Введите ключ (в 16-ричном формате, например, 123F):</label>
+        <input type="text" id="key" placeholder="Введите ключ...">
+
+        <label for="fileToEncrypt">Или выберите файл для шифрования:</label>
+        <input type="file" id="fileToEncrypt">
+
+        <button onclick="processSpeckCipher()">Шифровать и расшифровать</button>
+
+        <div class="result" id="encryptedResult"></div>
+        <div class="result" id="encryptedResultHex"></div>
+        <div class="result" id="decryptedResult"></div>
+        <div class="time-result" id="encryptionTimeResult"></div>
+        <div class="time-result" id="decryptionTimeResult"></div>
+    </div>
+
+    <!-- Блок для расшифровки -->
+    <div class="container">
+        <h2>Расшифровка</h2>
+        <label for="ciphertext">Введите зашифрованный текст:</label>
+        <textarea id="ciphertext" rows="4" placeholder="Введите зашифрованный текст..."></textarea>
+
+        <label for="decryptKey">Введите ключ (в 16-ричном формате, например, 123F):</label>
+        <input type="text" id="decryptKey" placeholder="Введите ключ...">
+
+        <label for="fileToDecrypt">Или выберите файл для расшифровки:</label>
+        <input type="file" id="fileToDecrypt">
+
+        <button onclick="decryptSpeckText()">Расшифровать</button>
+
+        <div class="result" id="decryptedCiphertext"></div>
+        <div class="time-result" id="decryptionTimeResult2"></div>
+    </div>
+
+    <script>
+        // Функции для шифрования и расшифрования
+        function rotr(x, n, bits) {
+            let result = (x >>> n) | (x << (bits - n));
+            return result & ((1 << bits) - 1);  // Убедитесь, что результат в пределах битовой ширины
+        }
+
+        function rotl(x, n, bits) {
+            let result = (x << n) | (x >>> (bits - n));
+            return result & ((1 << bits) - 1);  // Убедитесь, что результат в пределах битовой ширины
+        }
+
+        function encryptSpeck(plaintext, keys) {
+            let [x, y] = plaintext;
+
+            for (let round = 0; round < keys.length; round++) {
+                x = rotr(x, 7, 16);  
+                x = (x + y) & 0xFFFF;
+                x ^= keys[round];  
+
+                y = rotl(y, 2, 16);  
+                y ^= x;
+            }
+
+            return [x, y];
+        }
+
+        function decryptSpeck(ciphertext, keys) {
+            let [x, y] = ciphertext;
+
+            for (let round = keys.length - 1; round >= 0; round--) {
+                y ^= x;  
+                y = rotl(y, 16 - 2, 16);  
+
+                x ^= keys[round];
+                x = (x - y) & 0xFFFF;  
+                x = rotr(x, 16 - 7, 16);
+            }
+
+            return [x, y];
+        }
+
+        function stringToBlocks(str) {
+            if (str.length % 2 !== 0) {
+                str += '\0';
+            }
+
+            let blocks = [];
+            for (let i = 0; i < str.length; i += 2) {
+                let block = 0;
+                block |= str.charCodeAt(i) << 8;
+                block |= str.charCodeAt(i + 1);
+                blocks.push(block);
+            }
+            return blocks;
+        }
+
+        function blocksToString(blocks) {
+            let str = '';
+            for (let i = 0; i < blocks.length; i++) {
+                str += String.fromCharCode((blocks[i] >> 8) & 0xFF);
+                str += String.fromCharCode(blocks[i] & 0xFF);
+            }
+            return str.replace(/\0/g, '');
+        }
+
+        function generateKeysFromInitialKey(initialKey, numberOfRounds) {
+            let keys = [];
+            let key = initialKey;
+            for (let i = 0; i < numberOfRounds; i++) {
+                keys.push(key);
+                key = (key + 0x1) & 0xFFFF; 
+            }
+            return keys;
+        }
+
+        // Чтение файла
+        function readFile(fileInputId) {
+            return new Promise((resolve, reject) => {
+                let fileInput = document.getElementById(fileInputId);
+                let file = fileInput.files[0];
+                if (!file) {
+                    reject('Нет файла');
+                }
+                let reader = new FileReader();
+                reader.onload = function(event) {
+                    resolve(event.target.result);
+                };
+                reader.onerror = function(error) {
+                    reject(error);
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        // Функция для сохранения зашифрованного текста в файл
+        function saveToFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Шифрование и расшифровка с интерфейсом
+        async function processSpeckCipher() {
+            let plaintext = document.getElementById('plaintext').value;
+            let keyString = document.getElementById('key').value;
+            let initialKey = parseInt(keyString, 16);
+
+            let fileEncrypted = await readFile('fileToEncrypt').catch(() => null);
+            if (fileEncrypted) {
+                plaintext = fileEncrypted;
+            }
+
+            let blocks = stringToBlocks(plaintext);
+            let keys = generateKeysFromInitialKey(initialKey, 24);
+
+            // Засекаем время шифрования
+            let startEncryptionTime = Date.now();
+            
+            let ciphertext = [];
+            for (let i = 0; i < blocks.length; i += 2) {
+                let block = [blocks[i], blocks[i + 1] || 0];
+                let encryptedBlock = encryptSpeck(block, keys);
+                ciphertext.push(...encryptedBlock);
+            }
+
+            let encryptedText = blocksToString(ciphertext);
+            document.getElementById('encryptedResult').textContent = 'Зашифрованный текст: ' + encryptedText;
+
+            // Зашифрованный текст в шестнадцатеричной кодировке
+            let encryptedTextHex = ciphertext.map(block => block.toString(16).padStart(4, '0')).join(' ');
+            document.getElementById('encryptedResultHex').textContent = 'Зашифрованный текст (Hex): ' + encryptedTextHex;
+
+            // Сохранение зашифрованного текста в файл
+            saveToFile(encryptedText, 'encrypted_text.txt');
+
+            // Завершаем время шифрования
+            let endEncryptionTime = Date.now();
+            let encryptionTime = (endEncryptionTime - startEncryptionTime) / 1000;  // Время в секундах
+            document.getElementById('encryptionTimeResult').textContent = `Время шифрования: ${encryptionTime.toFixed(3)} сек`;
+
+            // Засекаем время расшифровки
+            let startDecryptionTime = Date.now();
+            
+            let decrypted = [];
+            for (let i = 0; i < ciphertext.length; i += 2) {
+                let block = [ciphertext[i], ciphertext[i + 1] || 0];
+                let decryptedBlock = decryptSpeck(block, keys);
+                decrypted.push(...decryptedBlock);
+            }
+
+            document.getElementById('decryptedResult').textContent = 'Расшифрованный текст: ' + blocksToString(decrypted);
+
+            // Сохраняем расшифрованный текст в файл
+            saveToFile(blocksToString(decrypted), 'decrypted_text.txt');
+            
+            // Завершаем время расшифровки
+            let endDecryptionTime = Date.now();
+            let decryptionTime = (endDecryptionTime - startDecryptionTime) / 1000;  // Время в секундах
+            document.getElementById('decryptionTimeResult').textContent = `Время расшифровки: ${decryptionTime.toFixed(3)} сек`;
+        }
+
+        async function decryptSpeckText() {
+            let encryptedText = document.getElementById('ciphertext').value;
+            let keyString = document.getElementById('decryptKey').value;
+            let initialKey = parseInt(keyString, 16);
+
+            let fileDecrypted = await readFile('fileToDecrypt').catch(() => null);
+            if (fileDecrypted) {
+                encryptedText = fileDecrypted;
+            }
+
+            let blocks = stringToBlocks(encryptedText);
+            let keys = generateKeysFromInitialKey(initialKey, 24);
+
+            // Засекаем время расшифровки
+            let startDecryptionTime = Date.now();
+            
+            let decrypted = [];
+            for (let i = 0; i < blocks.length; i += 2) {
+                let block = [blocks[i], blocks[i + 1] || 0];
+                let decryptedBlock = decryptSpeck(block, keys);
+                decrypted.push(...decryptedBlock);
+            }
+
+            let decryptedText = blocksToString(decrypted);
+            document.getElementById('decryptedCiphertext').textContent = 'Расшифрованный текст: ' + decryptedText;
+
+            // Сохраняем расшифрованный текст в файл
+            saveToFile(decryptedText, 'decrypted_text.txt');
+
+            // Завершаем время расшифровки
+            let endDecryptionTime = Date.now();
+            let decryptionTime = (endDecryptionTime - startDecryptionTime) / 1000;  // Время в секундах
+            document.getElementById('decryptionTimeResult2').textContent = `Время расшифровки: ${decryptionTime.toFixed(3)} сек`;
+        }
+    </script>
+</body>
+</html>

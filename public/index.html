@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DES Encryption</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding: 0;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end; /* Прижать блоки к правой стороне */
+    }
+    .form-container {
+      width: 48%; /* Две колонки */
+      box-sizing: border-box;
+      margin-bottom: 20px;
+      padding-left: 140px; /* Добавить отступ слева для визуального разделения */
+    }
+    form {
+      margin: 20px 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+    }
+    input, button {
+      padding: 8px;
+      margin-bottom: 10px;
+      display: block;
+      width: 100%;
+      max-width: 400px;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+    }
+    #result p {
+      margin: 5px 0;
+    }
+    #head {
+      text-align: center;
+    }
+    button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        /* Стили для label, чтобы он выглядел как кнопка */
+label[for="encryptFile"] {
+    display: inline-block;
+    width: 30%;
+    padding: 10px;
+    background-color: blue;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+}
+label[for="decryptFile"] {
+    display: inline-block;
+    width: 30%;
+    padding: 10px;
+    background-color: blue;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+}
+
+/* Скрытие реального input[type="file"] */
+input[type="file"] {
+    display: none;
+}
+  </style>
+</head>
+<body>
+  <h1 id="head">DES Encryption</h1>
+
+  <div class="container">
+    <!-- Форма для шифрования текста -->
+    <div class="form-container">
+      <form id="encryptionForm">
+        <h2>Шифрование текста</h2>
+        <label for="text">Введите текст для шифрования:</label>
+        <input type="text" id="text" name="text" required>
+        
+        <label for="key">Введите ключ (8 символов):</label>
+        <input type="text" id="key" name="key" maxlength="8" required>
+
+        <button type="submit">Зашифровать</button>
+      </form>
+
+      <div id="textResult">
+        <p><strong>Зашифрованный текст:</strong> <span id="encryptedText">Здесь появится результат.</span></p>
+        <p><strong>Время шифрования:</strong> <span id="encryptTime">0</span> мс</p>
+      </div>
+    </div>
+
+    <!-- Форма для расшифровки текста -->
+    <div class="form-container">
+      <form id="decryptionForm">
+        <h2>Расшифровка текста</h2>
+        <label for="encryptedTextInput">Введите шифрованный текст:</label>
+        <input type="text" id="encryptedTextInput" name="encryptedText" required>
+        
+        <label for="decryptKey">Введите ключ (8 символов):</label>
+        <input type="text" id="decryptKey" name="key" maxlength="8" required>
+
+        <button type="submit">Расшифровать текст</button>
+      </form>
+
+      <div id="decryptionResult">
+        <p><strong>Расшифрованный текст:</strong> <span id="decryptedTextOutput">Здесь появится результат.</span></p>
+        <p><strong>Время расшифрования:</strong> <span id="decryptTimeOutput">0</span> мс</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Форма для шифрования файла -->
+    <div class="form-container">
+      <form id="encryptFileForm" enctype="multipart/form-data">
+        <h2>Шифрование файла</h2>
+        <label for="encryptFile">Выберите файл:</label>
+        <input type="file" id="encryptFile" name="file" required>
+
+        <label for="encryptKey">Введите ключ (8 символов):</label>
+        <input type="text" id="encryptKey" name="key" maxlength="8" required>
+
+        <button type="submit">Зашифровать файл</button>
+      </form>
+
+      <div id="fileResult">
+        <strong>Результаты для файла:</strong>
+        <p id="fileMessage">Здесь появится сообщение о результате.</p>
+        <p><strong>Время шифрования файла:</strong> <span id="fileEncryptTime">0</span> мс</p>
+      </div>
+    </div>
+
+    <!-- Форма для расшифровки файла -->
+    <div class="form-container">
+      <form id="decryptFileForm" enctype="multipart/form-data">
+        <h2>Расшифровка файла</h2>
+        <label for="decryptFile">Выберите файл:</label>
+        <input type="file" id="decryptFile" name="file" required>
+
+        <label for="decryptKey2">Введите ключ (8 символов):</label>
+        <input type="text" id="decryptKey2" name="key" maxlength="8" required>
+
+        <button type="submit">Расшифровать файл</button>
+        <strong>Результаты для файла:</strong>
+        <p id="fileMessage2">Здесь появится сообщение о результате.</p>
+        <p><strong>Время расшифрования файла:</strong> <span id="fileDecryptTime">0</span> мс</p>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    // Обработка формы для шифрования текста
+    const textForm = document.getElementById('encryptionForm');
+    textForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const text = document.getElementById('text').value;
+      const key = document.getElementById('key').value;
+
+      if (key.length !== 8) {
+        return Swal.fire({
+          icon: 'error',
+          title: 'Ошибка при шифровании текста!',
+          text: 'Проверьте ключ на правильность.',
+        });
+      }
+
+      try {
+        const response = await fetch('/encrypt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, key })
+        });
+        const data = await response.json();
+
+        if (data.error) {
+          alert(data.error);
+        } else {
+          document.getElementById('encryptedText').textContent = data.encrypted;
+          document.getElementById('encryptTime').textContent = data.encryptTimeMs;
+          document.getElementById('decryptedText').textContent = data.decrypted;
+          document.getElementById('decryptTime').textContent = data.decryptTimeMs;
+        }
+      } catch (err) {
+        console.log(`!!!${err}`);
+      }
+    });
+
+// Обработка формы для расшифровки текста
+const decryptForm = document.getElementById('decryptionForm');
+decryptForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const encryptedText = document.getElementById('encryptedTextInput').value;
+  const key = document.getElementById('decryptKey').value;
+
+  if (key.length !== 8) {
+    return Swal.fire({
+      icon: 'error',
+      title: 'Ошибка при расшифровании текста!',
+      text: 'Проверьте ключ на правильность.',
+    });
+  }
+
+  try {
+    const response = await fetch('/decrypt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encryptedText, key })
+    });
+    const data = await response.json();
+
+    if (data.error) {
+      alert(data.error);
+    } else {
+      document.getElementById('decryptedTextOutput').textContent = data.decrypted;
+
+      // Проверяем наличие времени расшифровки в ответе и выводим его
+      const decryptTime = data.decryptTimeMs || 'Неизвестно';
+      document.getElementById('decryptTimeOutput').textContent = `${decryptTime}`;  // Если не найдено - показываем 'Неизвестно'
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+
+
+    // Обработка формы для шифрования файла
+    const encryptFileForm = document.getElementById('encryptFileForm');
+    encryptFileForm.addEventListener('submit', async (e) => {
+      const key = document.getElementById('encryptKey').value;
+      e.preventDefault();
+      if (key.length !== 8) {
+        return Swal.fire({
+          icon: 'error',
+          title: 'Ошибка при шифровании файла!',
+          text: 'Проверьте ключ на правильность.',
+        });
+      }
+      const formData = new FormData(encryptFileForm);
+      try {
+        const response = await fetch('/encrypt-file', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await response.json();
+
+        if (data.error) {
+          alert(data.error);
+        } else {
+          document.getElementById('fileMessage').textContent = data.message;
+          document.getElementById('fileEncryptTime').textContent = data.encryptTimeMs;
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    });
+
+    // Обработка формы для расшифровки файла
+const decryptFileForm = document.getElementById('decryptFileForm');
+decryptFileForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  // Получаем значение ключа и убираем лишние пробелы
+  const key = document.getElementById('decryptKey2').value.trim();
+
+  // Проверяем длину ключа
+  if (key.length !== 8) {
+    return Swal.fire({
+      icon: 'error',
+      title: 'Ошибка при расшифровке файла!',
+      text: 'Проверьте ключ на правильность.',
+    });
+  }
+
+  // Создаем FormData для отправки файла
+  const formData = new FormData(decryptFileForm);
+  try {
+    const response = await fetch('/decrypt-file', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await response.json();
+
+    if (data.error) {
+      alert(data.error);
+    } else {
+      // Отображаем сообщение и время расшифровки
+      document.getElementById('fileMessage2').textContent = data.message;
+      document.getElementById('fileDecryptTime').textContent = `${data.decryptTimeMs}`; // Отображаем время
+    }
+  } catch (err) {
+    console.log('Ошибка при отправке запроса:', err);
+  }
+});
+
+
+  </script>
+</body>
+</html>
